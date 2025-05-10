@@ -21,23 +21,24 @@ print(data.shape, labels.shape)
 data['Sex'] = data['Sex'].map({'male': 1, 'female': 0}) # first method
 
 data = data.to_numpy().astype(np.float32)
-data = torch.from_numpy(data).float()
-print(data)
-
 # standardization
-# scaler = StandardScaler()
-# data = scaler.fit_transform(data) # 這個標準化要用numpy類,不能放tensor類
-data = (data - data.mean()) / data.std()
-print(data)
+scaler = StandardScaler()
+data = scaler.fit_transform(data) # 這個標準化要用numpy類,不能放tensor類
+# data = (data - data.mean()) / data.std()
+
+
+data = torch.from_numpy(data).float()
+
+
 # 用BCELoss,标签要float
 tensor_data = TensorDataset(data, labels)
 
 train_data_size = int(len(tensor_data) * 0.8)
 val_data_size = len(tensor_data) - train_data_size
-train_dataset, test_dataset = random_split(tensor_data, (train_data_size, val_data_size))
+train_dataset, val_dataset = random_split(tensor_data, (train_data_size, val_data_size))
 
 train_dataloader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-val_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=True)
+val_dataloader = DataLoader(val_dataset, batch_size=4, shuffle=True)
 
 
 
@@ -50,14 +51,23 @@ class Classifier(nn.Module):
         self.linear1 = nn.Linear(in_features=3, out_features=64)
         self.linear2 = nn.Linear(in_features=64, out_features=32)
         self.linear3 = nn.Linear(in_features=32, out_features=1)
+        self.batchnorm1d1 = nn.BatchNorm1d(64)
+        self.batchnorm1d2 = nn.BatchNorm1d(32)
+        self.dropout = nn.Dropout(0.2)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         # x.view(-1, 3)
         x = self.linear1(x)
+        x = self.batchnorm1d1(x)
         x = self.relu(x)
+        x = self.dropout(x)
+
         x = self.linear2(x)
+        x = self.batchnorm1d2(x)
         x = self.relu(x)
+        x = self.dropout(x)
+
         x = self.linear3(x)
         x = self.sigmoid(x)
         return x
@@ -108,9 +118,13 @@ test_data = test_data_o[['Age', 'Sex', 'Pclass', 'PassengerId']]
 test_data = test_data.fillna(0) # 題目不許刪數據
 test_ID = test_data.pop('PassengerId')
 test_data['Sex'] = test_data['Sex'].map({'male': 1, 'female': 0})
-test_data = torch.from_numpy(test_data.to_numpy().astype(np.float32)).float()
 
-test_data = (test_data - test_data.mean()) / test_data.std()
+test_data = test_data.to_numpy().astype(np.float32)
+# 测试阶段必须使用相同的scaler 不然这会导致测试数据使用与训练数据不同的分布进行标准化，破坏数据一致性。
+test_data = scaler.transform(test_data)
+# test_data = (test_data - test_data.mean()) / test_data.std()
+
+test_data = torch.from_numpy(test_data).float()
 
 print(test_data.shape)
 test_data = test_data.view(-1, 3)
