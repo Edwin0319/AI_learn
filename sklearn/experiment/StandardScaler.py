@@ -21,3 +21,6 @@ scaler2 = MinMaxScaler()
 # 對數據進行縮放處理
 scaled_data2 = scaler2.fit_transform(data)
 print(scaled_data2)
+
+# sklearn 不接受張量輸入
+# 保持數據為 numpy array 直至完成所有 sklearn 預處理（包括標準化）
