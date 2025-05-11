@@ -20,7 +20,7 @@ print(data.shape, labels.shape)
 
 data['Sex'] = data['Sex'].map({'male': 1, 'female': 0}) # first method
 
-data = data.to_numpy().astype(np.float32)
+data = data.to_numpy().astype(np.float32) # data = data.values.astype(np.float32)
 # standardization
 scaler = StandardScaler()
 data = scaler.fit_transform(data) # 這個標準化要用numpy類,不能放tensor類
